@@ -4,14 +4,13 @@ import (
 	"encoding/csv"
 	"fmt"
 	"os"
-	_ "log"
 )
 
 type OnePassword struct {
 	path string
 }
 
-type Import struct {
+type ImportStruct struct {
 	Title    string
 	Website  string
 	Username string
@@ -19,14 +18,14 @@ type Import struct {
 	Notes    string
 }
 
-func NewOnePassword(path string) *OnePassword {
+func NewOnePassword(path *string) *OnePassword {
 	return &OnePassword{
-		path: path,
+		path: *path,
 	}
 }
 
-func (op *OnePassword) write(enpass *Export) {
-	result := make([][]string, 0)
+func (onePassword *OnePassword) Convert(enpass *Export) *[][]string {
+	result := make([][]string, 0, len(enpass.Items))
 
 	result = append(result, []string{"title", "website", "username", "password", "notes"})
 
@@ -38,27 +37,31 @@ func (op *OnePassword) write(enpass *Export) {
 		var password string
 		var notes string
 
-		// TODO update
-		// fields := make(map[string][]string, 0)
-
+		fields := make(map[string][]string, 0)
 		for _, field := range item.Fields {
-			switch field.Type {
-			case "url":
-				website = appendValue(website, field.Value)
-			case "password":
-				password = appendValue(password, field.Value)
-			case "email":
-				username = appendValue(username, field.Value)
+			if field.Value == "" {
+				continue
 			}
 
-			if field.Type == "username" && field.Value != "" {
-				// if username == "" {
-				// 	log.Print(field.Value)
-				// 	username = field.Value
-				// } else {
-					notes = fmt.Sprintf("username: %s", field.Value)
-				// }
+			if fields[field.Type] == nil {
+				row := []string{field.Value}
+				fields[field.Type] = row
+			} else {
+				fields[field.Type] = append(fields[field.Type], field.Value)
 			}
+		}
+
+		website = appendValue(fields["url"])
+		password = appendValue(fields["password"])
+
+		if len(fields["email"]) > 0 {
+			username = appendValue(fields["email"])
+
+			if len(appendValue(fields["username"])) > 0 {
+				notes = fmt.Sprintf("username: %s", appendValue(fields["username"]))
+			}
+		} else if len(appendValue(fields["username"])) > 0 {
+			username = appendValue(fields["username"])
 		}
 
 		if item.Note != "" {
@@ -70,7 +73,11 @@ func (op *OnePassword) write(enpass *Export) {
 		result = append(result, record)
 	}
 
-	file, err := os.Create(op.path)
+	return &result
+}
+
+func (onePassword *OnePassword) ToCsv(records *[][]string) {
+	file, err := os.Create(onePassword.path)
 	if err != nil {
 		panic(err)
 	}
@@ -79,16 +86,20 @@ func (op *OnePassword) write(enpass *Export) {
 
 	defer writer.Flush()
 
-	err = writer.WriteAll(result)
+	err = writer.WriteAll(*records)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func appendValue(source, value string) string {
-	if source == "" {
-		return value
-	} else {
-		return source + ", " + value
+func appendValue(source []string) (result string) {
+	for _, v := range source {
+		if result == "" {
+			result = v
+		} else {
+			result = result + ", " + v
+		}
 	}
+
+	return result
 }

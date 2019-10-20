@@ -1,27 +1,53 @@
 package main
 
-import _ "fmt"
+import (
+	"flag"
+	"log"
+	"os"
+)
 
 func main() {
-	enpass := NewEnpass("enpass_json.json")
-	onePassword := NewOnePassword("1password_result.csv")
+	// read cli params
+	enpassFilePath := flag.String("enpass_src_path", "enpass.json", "path to file with exported data from the Enpass application")
+	enpassExtension := flag.String("enpass_extension", "json", "extension of source file is JSON or CSV (JSON by default)")
+	onePasswordPath := flag.String("1password_dst_path", "1password.csv", "path to file with result of conversion")
+	flag.Parse()
 
-	enpassStruct := enpass.read()
+	// validate flags
+	checkFilePath(enpassFilePath)
+	checkCsvOrJsonExtention(enpassExtension)
 
-	// fmt.Println(enpassStruct)
+	// init services
+	enpass := NewEnpass(enpassFilePath, enpassExtension)
+	onePassword := NewOnePassword(onePasswordPath)
 
-	// for i := 0; i < 10; i++ {
-	// 	fmt.Printf("----------%d------------", i)
-	// 	fmt.Printf("title: %s\n", enpassStruct.Items[i].Title)
+	// read enpass file from json
+	enpassStruct := enpass.fromJson()
 
-	// 	for _, field := range enpassStruct.Items[i].Fields {
-	// 		if field.Value != "" {
-	// 			fmt.Printf("%s: %s\n", field.Type, field.Value)
-	// 		}
-	// 	}
+	// invoke convert method
+	var onePasswordImport *[][]string
+	switch *enpassExtension {
+	case "json":
+		onePasswordImport = onePassword.Convert(enpassStruct)
+	case "csv":
+		onePasswordImport = onePassword.Convert(enpassStruct)
+	default:
+		log.Fatalf("unexpected extension of input file %s", *enpassExtension)
+	}
 
-	// 	fmt.Printf("note: %s\n\n", enpassStruct.Items[i].Note)
-	// }
+	// save to csv for 1Password
+	onePassword.ToCsv(onePasswordImport)
+}
 
-	onePassword.write(enpassStruct)
+func checkCsvOrJsonExtention(extension *string) {
+	if *extension != "json" && *extension != "csv" {
+		log.Fatalf("extension %s is not inapplicable", *extension)
+	}
+}
+
+func checkFilePath(path *string) {
+	info, err := os.Stat(*path)
+	if os.IsNotExist(err) || info.IsDir() {
+		log.Fatalf("file doesn't exist by path %s", *path)
+	}
 }

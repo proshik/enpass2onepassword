@@ -3,15 +3,15 @@ package main
 import (
 	"encoding/json"
 	"io/ioutil"
-	"log"
 )
 
 type Enpass struct {
-	path string
+	path      string
+	extension string
 }
 
 type Export struct {
-	Items []Item 
+	Items []Item `json:"items,omitempty"`
 }
 
 type Item struct {
@@ -26,40 +26,28 @@ type Field struct {
 	Value string `json:"value,omitempty"`
 }
 
-func NewEnpass(path string) *Enpass {
-	if path == "" {
-		log.Fatal("need to provide the path of enpass file")
-	}
-
+func NewEnpass(path *string, expansion *string) *Enpass {
 	return &Enpass{
-		path: path,
+		path:      *path,
+		extension: *expansion,
 	}
 }
 
-func (e *Enpass) read() *Export {
-	// file, err := os.Open("enpass_json.json")
-	// if err != nil {
-	// 	panic(err)
-	// }
-
-	// defer file.Close()
-
+func (e *Enpass) fromJson() *Export {
 	file, err := ioutil.ReadFile(e.path)
 	if err != nil {
 		panic(err)
 	}
 
-	log.Println("file enpass was readed")
-
 	var enpass = Export{}
-	// json.NewDecoder(file).Decode(&enpass)
-
 	err = json.Unmarshal(file, &enpass)
 	if err != nil {
 		panic(err)
 	}
 
-	log.Println("enpass file was parsed to structure")
-
 	return &enpass
+}
+
+func (e *Enpass) fromCsv() *Export {
+	panic("not implemented")
 }
