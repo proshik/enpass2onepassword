@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"io/ioutil"
+	"log"
 )
 
 const (
@@ -40,21 +41,21 @@ func NewEnpass(path *string, expansion *string) *Enpass {
 	}
 }
 
-func (e *Enpass) fromJson() *Export {
-	file, err := ioutil.ReadFile(e.path)
+func (enpass *Enpass) fromJson() *Export {
+	file, err := ioutil.ReadFile(enpass.path)
 	if err != nil {
-		panic(err)
+		log.Fatalf("can't read the file by path: %s", enpass.path)
 	}
 
-	var enpass = Export{}
-	err = json.Unmarshal(file, &enpass)
+	var data = Export{}
+	err = json.Unmarshal(file, &data)
 	if err != nil {
-		panic(err)
+		log.Fatalf("error during to unmarshal the json from file by path: %s", enpass.path)
 	}
 
-	return &enpass
+	return &data
 }
 
-func (e *Enpass) fromCsv() *Export {
+func (enpass *Enpass) fromCsv() *Export {
 	panic("not implemented")
 }

@@ -15,7 +15,7 @@ func main() {
 
 	// validate flags
 	checkFilePath(enpassFilePath)
-	checkCsvOrJsonExtention(enpassExtension)
+	checkAvailableExtension(enpassExtension)
 
 	// init services
 	enpass := NewEnpass(enpassFilePath, enpassExtension)
@@ -23,23 +23,18 @@ func main() {
 
 	// read enpass file from json
 	enpassStruct := enpass.fromJson()
+	log.Println("The Enpass file was read.")
 
 	// invoke convert method
-	var onePasswordImport *Import
-	switch *enpassExtension {
-	case "json":
-		onePasswordImport = onePassword.Convert(enpassStruct)
-	case "csv":
-		onePasswordImport = onePassword.Convert(enpassStruct)
-	default:
-		log.Fatalf("unexpected extension of input file %s", *enpassExtension)
-	}
+	onePasswordImport := onePassword.Convert(enpassStruct)
+	log.Println("Transformation finished.")
 
 	// save to csv for 1Password
 	onePassword.ToCsv(onePasswordImport)
+	log.Printf("SUCCESSFUL CONVERTATION. See the result file by path: %s", *onePasswordPath)
 }
 
-func checkCsvOrJsonExtention(extension *string) {
+func checkAvailableExtension(extension *string) {
 	if *extension != "json" && *extension != "csv" {
 		log.Fatalf("extension %s is not inapplicable", *extension)
 	}
@@ -48,6 +43,6 @@ func checkCsvOrJsonExtention(extension *string) {
 func checkFilePath(path *string) {
 	info, err := os.Stat(*path)
 	if os.IsNotExist(err) || info.IsDir() {
-		log.Fatalf("file doesn't exist by path %s", *path)
+		log.Fatalf("file %s doesn't exist", *path)
 	}
 }

@@ -90,7 +90,7 @@ func (onePassword *OnePassword) ToCsv(importStruct *Import) {
 
 	err = writer.WriteAll(importStruct.logins)
 	if err != nil {
-		panic(err)
+		log.Fatalf("error while writing data to *.csv file by path: %s", onePassword.path)
 	}
 }
 
