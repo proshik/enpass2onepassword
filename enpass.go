@@ -5,6 +5,13 @@ import (
 	"io/ioutil"
 )
 
+const (
+	EnpassTypeEmail    = "email"
+	EnpassTypeUsername = "username"
+	EnpassTypePassword = "password"
+	EnpassTypeWebsite  = "url"
+)
+
 type Enpass struct {
 	path      string
 	extension string

@@ -25,7 +25,7 @@ func main() {
 	enpassStruct := enpass.fromJson()
 
 	// invoke convert method
-	var onePasswordImport *[][]string
+	var onePasswordImport *Import
 	switch *enpassExtension {
 	case "json":
 		onePasswordImport = onePassword.Convert(enpassStruct)

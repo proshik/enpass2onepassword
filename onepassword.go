@@ -3,19 +3,24 @@ package main
 import (
 	"encoding/csv"
 	"fmt"
+	"log"
 	"os"
+)
+
+const (
+	OnePasswordTitle    = "title"
+	OnePasswordWebsite  = "website"
+	OnePasswordUsername = "username"
+	OnePasswordPassword = "password"
+	OnePasswordNotes    = "notes"
 )
 
 type OnePassword struct {
 	path string
 }
 
-type ImportStruct struct {
-	Title    string
-	Website  string
-	Username string
-	Password string
-	Notes    string
+type Import struct {
+	logins [][]string
 }
 
 func NewOnePassword(path *string) *OnePassword {
@@ -24,19 +29,18 @@ func NewOnePassword(path *string) *OnePassword {
 	}
 }
 
-func (onePassword *OnePassword) Convert(enpass *Export) *[][]string {
-	result := make([][]string, 0, len(enpass.Items))
+func (onePassword *OnePassword) Convert(enpass *Export) *Import {
+	logins := make([][]string, 0)
 
-	result = append(result, []string{"title", "website", "username", "password", "notes"})
+	logins = append(logins, []string{OnePasswordTitle, OnePasswordWebsite, OnePasswordUsername, OnePasswordPassword, OnePasswordNotes})
 
 	for _, item := range enpass.Items {
-		var record []string
-
 		var website string
 		var username string
 		var password string
 		var notes string
 
+		// build the map type -> slice of values
 		fields := make(map[string][]string, 0)
 		for _, field := range item.Fields {
 			if field.Value == "" {
@@ -51,42 +55,40 @@ func (onePassword *OnePassword) Convert(enpass *Export) *[][]string {
 			}
 		}
 
-		website = appendValue(fields["url"])
-		password = appendValue(fields["password"])
+		website = appendValue(fields[EnpassTypeWebsite])
+		password = appendValue(fields[EnpassTypePassword])
 
-		if len(fields["email"]) > 0 {
-			username = appendValue(fields["email"])
+		if len(fields[EnpassTypeEmail]) > 0 {
+			username = appendValue(fields[EnpassTypeEmail])
 
-			if len(appendValue(fields["username"])) > 0 {
-				notes = fmt.Sprintf("username: %s", appendValue(fields["username"]))
+			if len(appendValue(fields[EnpassTypeUsername])) > 0 {
+				notes = fmt.Sprintf("username: %s", appendValue(fields[EnpassTypeUsername]))
 			}
-		} else if len(appendValue(fields["username"])) > 0 {
-			username = appendValue(fields["username"])
+		} else if len(appendValue(fields[EnpassTypeUsername])) > 0 {
+			username = appendValue(fields[EnpassTypeUsername])
 		}
 
 		if item.Note != "" {
 			notes = notes + "\n" + item.Note
 		}
 
-		record = append(record, item.Title, website, username, password, notes)
-
-		result = append(result, record)
+		logins = append(logins, []string{item.Title, website, username, password, notes})
 	}
 
-	return &result
+	return &Import{logins}
 }
 
-func (onePassword *OnePassword) ToCsv(records *[][]string) {
+func (onePassword *OnePassword) ToCsv(importStruct *Import) {
 	file, err := os.Create(onePassword.path)
 	if err != nil {
-		panic(err)
+		log.Fatalf("error during creation of file to import by path: %s", onePassword.path)
 	}
 
 	writer := csv.NewWriter(file)
 
 	defer writer.Flush()
 
-	err = writer.WriteAll(*records)
+	err = writer.WriteAll(importStruct.logins)
 	if err != nil {
 		panic(err)
 	}
