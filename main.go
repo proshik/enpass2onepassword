@@ -31,7 +31,7 @@ type Generator interface {
 	Type() string
 }
 
-var generators = []Generator{&Login{}, &CreditCard{}}
+var generators = []Generator{&Login{LoginType}, &Login{"computer"}, &CreditCard{}}
 
 func main() {
 	// read cli params

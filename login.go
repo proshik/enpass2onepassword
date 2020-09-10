@@ -9,12 +9,14 @@ const LoginType = "login"
 
 const (
 	EmailLabel    = "EMAIL"
+	Email2Label   = "E-MAIL"
 	UsernameLabel = "USERNAME"
 	PasswordLabel = "PASSWORD"
 	UrlLabel      = "URL"
 )
 
 type Login struct {
+	categoryType string
 }
 
 func (login *Login) Generate(items []EnpassItem) [][]string {
@@ -23,7 +25,6 @@ func (login *Login) Generate(items []EnpassItem) [][]string {
 	records = append(records, []string{"title", "website", "username", "password", "notes"})
 
 	for _, item := range items {
-
 		// build the map type -> slice of values
 		fieldValuesByLabel := make(map[string][]string, 0)
 		for _, field := range item.Fields {
@@ -46,14 +47,16 @@ func (login *Login) Generate(items []EnpassItem) [][]string {
 		var notes string
 
 		// fill the username by email if the not null. In other case
-		if len(fieldValuesByLabel[EmailLabel]) > 0 {
-			username = joinValue(fieldValuesByLabel[EmailLabel])
+		if len(fieldValuesByLabel[Email2Label]) > 0 {
+			username = joinValue(fieldValuesByLabel[Email2Label])
 
 			if len(joinValue(fieldValuesByLabel[UsernameLabel])) > 0 {
 				notes = fmt.Sprintf("username(s): %s;\n", joinValue(fieldValuesByLabel[UsernameLabel]))
 			}
 		} else if len(joinValue(fieldValuesByLabel[UsernameLabel])) > 0 {
 			username = joinValue(fieldValuesByLabel[UsernameLabel])
+		} else if len(joinValue(fieldValuesByLabel[EmailLabel])) > 0 {
+			username = joinValue(fieldValuesByLabel[EmailLabel])
 		}
 
 		website := joinValue(fieldValuesByLabel[UrlLabel])
@@ -70,7 +73,7 @@ func (login *Login) Generate(items []EnpassItem) [][]string {
 }
 
 func (login *Login) Type() string {
-	return LoginType
+	return login.categoryType
 }
 
 func joinValue(source []string) (result string) {
